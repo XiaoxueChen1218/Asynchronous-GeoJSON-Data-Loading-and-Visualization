@@ -33,7 +33,87 @@
         <div id="map"></div>
     </main>
     <script>
-        // JavaScript代码在此添加
+        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+let map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/satellite-v9',
+    zoom: 5.5,
+    center: [138, 38]
+});
+
+async function geojsonFetch() {
+    let response, earthquakes, japan;
+    response = await fetch('assets/earthquakes.geojson');
+    earthquakes = await response.json();
+    response = await fetch('assets/japan.json');
+    japan = await response.json();
+    
+    map.on('load', function () {
+        map.addSource('earthquakes', { type: 'geojson', data: earthquakes });
+        map.addLayer({
+            'id': 'earthquakes-layer',
+            'type': 'circle',
+            'source': 'earthquakes',
+            'paint': {
+                'circle-radius': 8,
+                'circle-stroke-width': 2,
+                'circle-color': 'red',
+                'circle-stroke-color': 'white'
+            }
+        });
+        
+        map.addSource('japan', { type: 'geojson', data: japan });
+        map.addLayer({
+            'id': 'japan-layer',
+            'type': 'fill',
+            'source': 'japan',
+            'paint': {
+                'fill-color': '#0080ff',
+                'fill-opacity': 0.5
+            }
+        });
+    });
+    
+    let table = document.getElementsByTagName("table")[0];
+    let row, cell1, cell2, cell3;
+    for (let i = 0; i < earthquakes.features.length; i++) {
+        row = table.insertRow(-1);
+        cell1 = row.insertCell(0);
+        cell2 = row.insertCell(1);
+        cell3 = row.insertCell(2);
+        cell1.innerHTML = earthquakes.features[i].properties.id;
+        cell2.innerHTML = earthquakes.features[i].properties.mag;
+        cell3.innerHTML = new Date(earthquakes.features[i].properties.time).toLocaleString("en-US");
+    }
+    
+    let btn = document.getElementsByTagName("button")[0];
+    btn.addEventListener('click', sortTable);
+    
+    function sortTable() {
+        let switching, i, x, y, shouldSwitch;
+        switching = true;
+        while (switching) {
+            switching = false;
+            let rows = table.rows;
+            for (i = 1; i < (rows.length - 1); i++) {
+                shouldSwitch = false;
+                x = parseFloat(rows[i].getElementsByTagName("td")[1].innerHTML);
+                y = parseFloat(rows[i + 1].getElementsByTagName("td")[1].innerHTML);
+                if (x < y) {
+                    shouldSwitch = true;
+                    break;
+                }
+            }
+            if (shouldSwitch) {
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+            }
+        }
+    }
+}
+
+geojsonFetch();
+
     </script>
 </body>
 </html>
